@@ -27,6 +27,8 @@ import random
 import weakref
 import uuid
 import errno
+import os
+import ctypes
 
 from xml.parsers.expat import ExpatError
 
@@ -477,6 +479,15 @@ class XMLStream(object):
             except SystemExit:
                 self.set_stop()
                 return False
+            if os.name is 'posix':
+                # libc caches /etc/resolv.conf. try to flush the cache, see https://github.com/fritzy/SleekXMPP/issues/298
+                try:
+                    log.debug("flushing /etc/resolv.conf cache")
+                    libc = ctypes.CDLL('libc.so.6')
+                    res_init = getattr(libc, '__res_init')
+                    res_init(None)
+                except:
+                    log.debug('Error calling libc.__res_init')
 
         if self.default_domain:
             try:
